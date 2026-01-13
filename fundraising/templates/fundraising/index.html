@@ -1,0 +1,110 @@
+{% extends 'fundraising/base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 text-center">
+        <img src="https://iili.io/f82rVyJ.jpg" alt="Logo"
+            class="d-inline-block align-text-top me-2 rounded img-fluid mb-3">
+        <h1 class="display-5 fw-bold text-orange">Chương Trình Xổ Số - Gây Quỹ Thiện Nguyện</h1>
+        <p class="lead">Mỗi tấm vé bạn mua là một món quà yêu thương</p>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-12 d-flex justify-content-center gap-3">
+        <div class="d-flex align-items-center">
+            <div style="width:20px;height:20px;background:#fd7e14;margin-right:5px;border-radius:4px;"></div> Còn trống
+        </div>
+        <div class="d-flex align-items-center">
+            <div style="width:20px;height:20px;background:#6c757d;margin-right:5px;border-radius:4px;"></div> Đã bán
+        </div>
+        <div class="d-flex align-items-center">
+            <div style="width:20px;height:20px;background:#198754;margin-right:5px;border-radius:4px;"></div> Đang chọn
+        </div>
+    </div>
+</div>
+
+<form action="{% url 'lock_tickets' %}" method="post" id="ticket-form">
+    {% csrf_token %}
+    <div class="ticket-grid">
+        {% for ticket in page_obj %}
+        {% if ticket.status == 'AVAILABLE' %}
+        <div class="ticket" data-number="{{ ticket.number }}" onclick="toggleTicket(this)">
+            {{ ticket.number }}
+        </div>
+        {% else %}
+        <div class="ticket sold" title="{{ ticket.status }}">
+            {{ ticket.number }}
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- Hidden inputs for selection -->
+    <div id="selected-inputs"></div>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+        <div>
+            <!-- Pagination -->
+            <nav>
+                <ul class="pagination mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link"
+                            href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        <div class="d-flex flex-md-row flex-column justify-content-center align-items-center gap-3">
+            <div>
+                <span class="fs-5 me-3">Đã chọn: <strong id="count">0</strong> vé</span>
+                <span class="fs-5 me-3">Tổng tiền: <strong id="total">0</strong> đ</span>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg" id="btn-pay" disabled>Thanh toán ngay</button>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const PRICE = 10000;
+
+    function toggleTicket(element) {
+        element.classList.toggle('selected');
+        updateSelection();
+    }
+
+    function updateSelection() {
+        const selected = document.querySelectorAll('.ticket.selected');
+        const count = selected.length;
+        document.getElementById('count').innerText = count;
+        document.getElementById('total').innerText = (count * PRICE).toLocaleString();
+
+        const container = document.getElementById('selected-inputs');
+        container.innerHTML = '';
+
+        selected.forEach(el => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'ticket_numbers';
+            input.value = el.dataset.number;
+            container.appendChild(input);
+        });
+
+        document.getElementById('btn-pay').disabled = count === 0;
+    }
+</script>
+{% endblock %}

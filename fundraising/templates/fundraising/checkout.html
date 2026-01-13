@@ -1,0 +1,95 @@
+{% extends 'fundraising/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card shadow">
+            <div class="card-header bg-orange text-white">
+                <h4 class="mb-0">Xác nhận thanh toán</h4>
+            </div>
+            <div class="card-body">
+                <h5>Danh sách vé đã chọn:</h5>
+                <div class="ticket-grid mb-4">
+                    {% for ticket in tickets %}
+                    <div class="ticket selected">
+                        {{ ticket.number }}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="alert alert-warning text-center">
+                    <h5>Thời gian giữ vé: <span id="timer" class="fw-bold text-danger">--:--</span></h5>
+                    <small>Vui lòng thanh toán trước khi vé được mở lại.</small>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Tổng tiền:</strong> {{ total_amount }} đ
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Tên Thánh + Họ và tên</label>
+                        <input type="text" name="name" class="form-control" required
+                            placeholder="VD: Giuse Nguyễn Văn A">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Số điện thoại</label>
+                        <input type="tel" name="phone" class="form-control" required placeholder="VD: 0912345678">
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">Xác nhận & Lấy mã QR</button>
+                        <a href="{% url 'cancel_checkout' %}" class="btn btn-outline-secondary">Quay lại (Hủy chọn
+                            vé)</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const timerElement = document.getElementById("timer");
+        let remaining = 180; // 3 phút = 180 giây
+
+        function updateTimer() {
+            if (remaining <= 0) {
+                timerElement.innerText = "00:00";
+                alert("Thời gian giữ vé đã hết. Bạn sẽ được chuyển về trang chủ.");
+                window.location.href = "{% url 'index' %}";
+                return;
+            }
+
+            const minutes = Math.floor(remaining / 60);
+            const seconds = Math.floor(remaining % 60);
+
+            timerElement.innerText =
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            if (remaining < 60) {
+                timerElement.classList.add("blink");
+            }
+
+            remaining--;
+        }
+
+        updateTimer();
+        setInterval(updateTimer, 1000);
+    });
+</script>
+<style>
+    .blink {
+        animation: blinker 1s linear infinite;
+    }
+
+    @keyframes blinker {
+        50% {
+            opacity: 0;
+        }
+    }
+</style>
+{% endblock %}
