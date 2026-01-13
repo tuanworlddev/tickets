@@ -46,8 +46,8 @@ class TicketAdmin(admin.ModelAdmin):
 
     def mark_as_available(self, request, queryset):
         queryset.update(status='AVAILABLE', buyer_name=None, buyer_phone=None, locked_at=None)
-        self.message_user(request, f"Đã đánh dấu {queryset.count()} vé là CÓ SẴN (Hủy bán/mở khóa).")
-    mark_as_available.short_description = "Đánh dấu là CÓ SẴN"
+        self.message_user(request, f"Đã hủy và mở lại {queryset.count()} vé.")
+    mark_as_available.short_description = "Hủy vé / Xóa thông tin người mua"
 
     def export_to_excel(self, request, queryset):
         import openpyxl
