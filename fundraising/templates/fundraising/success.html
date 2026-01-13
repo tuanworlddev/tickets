@@ -103,6 +103,9 @@
 
 {% block scripts %}
 <script>
+    // Clear the selection storage now that we are in success page
+    sessionStorage.removeItem('selected_tickets');
+
     function showSuccessModal() {
         // Hide confirm modal
         var confirmModalEl = document.getElementById('confirmPaymentModal');

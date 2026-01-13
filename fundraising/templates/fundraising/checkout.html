@@ -35,7 +35,8 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Số điện thoại</label>
-                        <input type="tel" name="phone" class="form-control" required placeholder="VD: 0912345678">
+                        <input type="tel" name="phone" class="form-control" required placeholder="VD: 0912345678"
+                            pattern="0[0-9]{9}" maxlength="10" inputmode="numeric">
                     </div>
 
                     <div class="d-grid gap-2">
@@ -52,9 +53,33 @@
 
 {% block scripts %}
 <script>
+    // Clear selection from storage
+    sessionStorage.removeItem('selected_tickets');
+
     document.addEventListener("DOMContentLoaded", function () {
         const timerElement = document.getElementById("timer");
         let remaining = 180; // 3 phút = 180 giây
+
+        const phoneInput = document.querySelector('input[name="phone"]');
+        const form = document.querySelector('form');
+
+        phoneInput.addEventListener("input", function () {
+            // chỉ cho nhập số
+            this.value = this.value.replace(/[^0-9]/g, "");
+        });
+
+        form.addEventListener("submit", function (e) {
+            const phone = phoneInput.value;
+
+            // regex số điện thoại VN: 10 số, bắt đầu bằng 0
+            const regex = /^0\d{9}$/;
+
+            if (!regex.test(phone)) {
+                e.preventDefault();
+                alert("Vui lòng nhập đúng số điện thoại 10 số bắt đầu bằng 0. Ví dụ: 0912345678");
+                phoneInput.focus();
+            }
+        });
 
         function updateTimer() {
             if (remaining <= 0) {

@@ -30,7 +30,7 @@
         {% for ticket in page_obj %}
         {% if ticket.status == 'AVAILABLE' %}
         <div class="ticket" data-number="{{ ticket.number }}" onclick="toggleTicket(this)">
-            {{ ticket.number }}
+            {{ ticket.number|stringformat:"03d" }}
         </div>
         {% else %}
         <div class="ticket sold" title="{{ ticket.status }}">
@@ -81,30 +81,66 @@
 {% block scripts %}
 <script>
     const PRICE = 10000;
+    const STORAGE_KEY = 'selected_tickets';
 
-    function toggleTicket(element) {
-        element.classList.toggle('selected');
-        updateSelection();
+    // Load selection from session storage
+    let selectedTickets = new Set(JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '[]'));
+
+    // Initialize UI on load
+    document.addEventListener('DOMContentLoaded', () => {
+        initSelection();
+    });
+
+    function initSelection() {
+        // Highlight visible tickets that are in our selection
+        document.querySelectorAll('.ticket').forEach(el => {
+            if (el.dataset.number && selectedTickets.has(el.dataset.number)) {
+                el.classList.add('selected');
+            }
+        });
+
+        // Update the bottom bar (count, total, hidden inputs)
+        updateUI();
     }
 
-    function updateSelection() {
-        const selected = document.querySelectorAll('.ticket.selected');
-        const count = selected.length;
+    function toggleTicket(element) {
+        const num = element.dataset.number;
+        if (!num) return;
+
+        if (selectedTickets.has(num)) {
+            selectedTickets.delete(num);
+            element.classList.remove('selected');
+        } else {
+            selectedTickets.add(num);
+            element.classList.add('selected');
+        }
+
+        saveSelection();
+        updateUI();
+    }
+
+    function saveSelection() {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(selectedTickets)));
+    }
+
+    function updateUI() {
+        // Update text
+        const count = selectedTickets.size;
         document.getElementById('count').innerText = count;
         document.getElementById('total').innerText = (count * PRICE).toLocaleString();
+        document.getElementById('btn-pay').disabled = count === 0;
 
+        // Update hidden inputs for form submission
         const container = document.getElementById('selected-inputs');
         container.innerHTML = '';
 
-        selected.forEach(el => {
+        selectedTickets.forEach(num => {
             const input = document.createElement('input');
             input.type = 'hidden';
             input.name = 'ticket_numbers';
-            input.value = el.dataset.number;
+            input.value = num;
             container.appendChild(input);
         });
-
-        document.getElementById('btn-pay').disabled = count === 0;
     }
 </script>
 {% endblock %}
