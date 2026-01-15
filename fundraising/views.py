@@ -193,6 +193,15 @@ def generate_ticket_image(ticket_number):
         'veso.jpg'
     )
 
+    font_path = os.path.join(
+        settings.BASE_DIR,
+        'fundraising',
+        'static',
+        'fundraising',
+        'fonts',
+        'Roboto-Regular.ttf'
+    )
+
     # Open the base image
     img = Image.open(template_path).convert("RGB")
     draw = ImageDraw.Draw(img)
@@ -201,14 +210,7 @@ def generate_ticket_image(ticket_number):
     formatted_number = f"{int(ticket_number):03d}"
     text = f"{formatted_number}"
 
-    # Load font
-    try:
-        font = ImageFont.truetype("arial.ttf", 48)
-    except:
-        try:
-            font = ImageFont.truetype("Arial.ttf", 48)
-        except:
-            font = ImageFont.load_default()
+    font = ImageFont.truetype(font_path, 48)
 
     # Calculate text size
     bbox = draw.textbbox((0, 0), text, font=font)
@@ -219,7 +221,7 @@ def generate_ticket_image(ticket_number):
     padding = 15
     img_width, img_height = img.size
     x = img_width - text_width - padding - 118
-    y = img_height - text_height - padding - 43
+    y = img_height - text_height - padding - 45
 
     # ✅ Draw text (black, no background)
     draw.text(
