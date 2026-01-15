@@ -19,15 +19,34 @@
             <p><strong>Số tiền: {{ amount }} đ</strong></p>
         </div>
 
-        <div class="mb-5">
+        <div class="mb-4">
             <h5>Vé của bạn:</h5>
-            <div class="ticket-grid justify-content-center max-width">
+            <div class="row row-cols-1 row-cols-md-2 g-4 justify-content-center">
                 {% for ticket in tickets %}
-                <div class="ticket sold bg-success">
-                    {{ ticket.number }}
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <img src="{% url 'serve_ticket_image' ticket.id %}" class="card-img-top ticket-img"
+                            alt="Vé {{ ticket.number }}">
+                        <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                            <span class="badge bg-success">Số: {{ ticket.number }}</span>
+                            <a href="{% url 'download_ticket' ticket.id %}"
+                                class="btn btn-sm btn-outline-success download-single">
+                                <i class="bi bi-download"></i> Tải về
+                            </a>
+                        </div>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
+            <p class="mt-3 text-muted small"><i class="bi bi-info-circle"></i> Mẹo mobile: Nhấn giữ vào ảnh vé để lưu
+                trực tiếp vào máy.</p>
+        </div>
+
+        <div class="mb-4 text-center">
+            <button id="download-all-btn" class="btn btn-success btn-lg">
+                <i class="bi bi-download"></i> Tải tất cả vé
+            </button>
+            <div id="download-status" class="mt-2 small text-muted d-none">Đang tải... vui lòng đợi.</div>
         </div>
 
         <div class="d-flex justify-content-center gap-3">
@@ -38,6 +57,17 @@
         </div>
     </div>
 </div>
+
+<style>
+    .ticket-img {
+        transition: transform 0.2s;
+        cursor: pointer;
+    }
+
+    .ticket-img:hover {
+        transform: scale(1.02);
+    }
+</style>
 
 <!-- Cancel Confirmation Modal -->
 <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
@@ -117,5 +147,32 @@
         var successModal = new bootstrap.Modal(successModalEl);
         successModal.show();
     }
+
+    // Download All logic for mobile/desktop without ZIP
+    document.getElementById('download-all-btn').addEventListener('click', function () {
+        const links = document.querySelectorAll('.download-single');
+        const status = document.getElementById('download-status');
+
+        status.classList.remove('d-none');
+        this.disabled = true;
+
+        let delay = 0;
+        links.forEach((link, index) => {
+            setTimeout(() => {
+                const a = document.createElement('a');
+                a.href = link.href;
+                a.download = ''; // Browser will use filename from Content-Disposition
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                if (index === links.length - 1) {
+                    status.classList.add('d-none');
+                    this.disabled = false;
+                }
+            }, delay);
+            delay += 1000; // 1 second delay between downloads to prevent browser blocking
+        });
+    });
 </script>
 {% endblock %}

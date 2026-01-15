@@ -4,3 +4,4 @@ requests
 openpyxl
 gunicorn
 whitenoise
+Pillow>=10.0.0

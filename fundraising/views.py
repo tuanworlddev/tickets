@@ -1,4 +1,7 @@
 import requests
+import io
+import zipfile
+import os
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
@@ -6,7 +9,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.db import transaction
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from PIL import Image, ImageDraw, ImageFont
 from .models import Ticket
 
 def release_expired_tickets():
@@ -173,3 +177,138 @@ def cancel_transaction(request):
             del request.session['last_sold_tickets']
         messages.info(request, 'Đã hủy giao dịch.')
     return redirect('index')
+
+def generate_ticket_image(ticket_number):
+    """
+    Generate a ticket image with the ticket number overlaid on the bottom-right corner.
+    Returns a PIL Image object.
+    """
+    # Path to the base ticket template
+    template_path = os.path.join(
+        settings.BASE_DIR,
+        'fundraising',
+        'static',
+        'fundraising',
+        'images',
+        'veso.jpg'
+    )
+
+    # Open the base image
+    img = Image.open(template_path).convert("RGB")
+    draw = ImageDraw.Draw(img)
+
+    # ✅ Format ticket number (001, 002, ..., 100)
+    formatted_number = f"{int(ticket_number):03d}"
+    text = f"{formatted_number}"
+
+    # Load font
+    try:
+        font = ImageFont.truetype("arial.ttf", 48)
+    except:
+        try:
+            font = ImageFont.truetype("Arial.ttf", 48)
+        except:
+            font = ImageFont.load_default()
+
+    # Calculate text size
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+
+    # Position: bottom-right corner
+    padding = 15
+    img_width, img_height = img.size
+    x = img_width - text_width - padding - 118
+    y = img_height - text_height - padding - 43
+
+    # ✅ Draw text (black, no background)
+    draw.text(
+        (x, y),
+        text,
+        font=font,
+        fill=(0, 0, 0)  # black text
+    )
+
+    return img
+
+def download_ticket(request, ticket_id):
+    """
+    Download a single ticket image with the ticket number overlaid.
+    """
+    # Get the ticket
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    
+    # Verify ticket is sold (optional security check)
+    if ticket.status != 'SOLD':
+        messages.error(request, 'Vé này chưa được mua.')
+        return redirect('index')
+    
+    # Generate the ticket image
+    img = generate_ticket_image(ticket.number)
+    
+    # Save to bytes buffer
+    buffer = io.BytesIO()
+    img.save(buffer, format='JPEG', quality=95)
+    buffer.seek(0)
+    
+    # Create HTTP response
+    response = HttpResponse(buffer, content_type='image/jpeg')
+    response['Content-Disposition'] = f'attachment; filename="ve_so_{ticket.number}.jpg"'
+    
+    return response
+
+def serve_ticket_image(request, ticket_id):
+    """
+    Serve the ticket image inline (for <img> tags).
+    """
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    img = generate_ticket_image(ticket.number)
+    
+    buffer = io.BytesIO()
+    img.save(buffer, format='JPEG', quality=95)
+    buffer.seek(0)
+    
+    return HttpResponse(buffer, content_type='image/jpeg')
+
+
+def download_all_tickets(request):
+    """
+    Download all purchased tickets as a ZIP file.
+    """
+    # Get tickets from session
+    sold_ids = request.session.get('last_sold_tickets', [])
+    
+    if not sold_ids:
+        messages.error(request, 'Không tìm thấy vé để tải.')
+        return redirect('index')
+    
+    # Get tickets from database
+    tickets = Ticket.objects.filter(number__in=sold_ids, status='SOLD')
+    
+    if not tickets.exists():
+        messages.error(request, 'Không tìm thấy vé để tải.')
+        return redirect('index')
+    
+    # Create ZIP file in memory
+    zip_buffer = io.BytesIO()
+    
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for ticket in tickets:
+            # Generate ticket image
+            img = generate_ticket_image(ticket.number)
+            
+            # Save image to bytes buffer
+            img_buffer = io.BytesIO()
+            img.save(img_buffer, format='JPEG', quality=95)
+            img_buffer.seek(0)
+            
+            # Add to ZIP
+            zip_file.writestr(f've_so_{ticket.number}.jpg', img_buffer.getvalue())
+    
+    zip_buffer.seek(0)
+    
+    # Create HTTP response
+    response = HttpResponse(zip_buffer, content_type='application/zip')
+    response['Content-Disposition'] = 'attachment; filename="ve_so_tat_ca.zip"'
+    
+    return response
