@@ -24,7 +24,7 @@
             <div class="row row-cols-1 row-cols-md-2 g-4 justify-content-center">
                 {% for ticket in tickets %}
                 <div class="col">
-                    <div class="card h-100 shadow-sm">
+                    <div class="card h-100 shadow-sm" style="border: 1px solid #d32f2f;">
                         <img src="{% url 'serve_ticket_image' ticket.id %}" class="card-img-top ticket-img"
                             alt="Vé {{ ticket.number }}">
                         <div class="card-body p-2 d-flex justify-content-between align-items-center">
@@ -43,14 +43,15 @@
         </div>
 
         <div class="mb-4 text-center">
-            <button id="download-all-btn" class="btn btn-success btn-lg">
+            <button id="download-all-btn" class="btn btn-sm btn-success btn-lg">
                 <i class="bi bi-download"></i> Tải tất cả vé
             </button>
             <div id="download-status" class="mt-2 small text-muted d-none">Đang tải... vui lòng đợi.</div>
         </div>
 
         <div class="d-flex justify-content-center gap-3">
-            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">Hủy giao
+            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#cancelModal">Hủy
+                giao
                 dịch</button>
             <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                 data-bs-target="#confirmPaymentModal">Tôi đã thanh toán</button>

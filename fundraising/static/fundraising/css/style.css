@@ -1,17 +1,72 @@
 :root {
-    --primary-color: #fd7e14;
-    /* Bootstrap orange-500 */
-    --primary-hover: #e66b0d;
+    --primary-color: #d32f2f;
+    /* Tet Red */
+    --primary-hover: #b71c1c;
+    --gold-color: #ffc107;
     --ticket-size: 50px;
 }
 
-.body {
+body {
     font-family: 'Roboto', sans-serif;
     font-size: 16px;
+    background-color: #fff9f9;
+    overflow-x: hidden;
 }
 
 .bg-orange {
     background-color: var(--primary-color) !important;
+    border-bottom: 3px solid var(--gold-color);
+}
+
+/* Tết Decorations */
+.tet-decoration-corner {
+    position: fixed;
+    top: -20px;
+    right: -20px;
+    width: 250px;
+    z-index: 1050;
+    pointer-events: none;
+    opacity: 0.9;
+}
+
+.tet-decoration-left {
+    position: fixed;
+    bottom: -20px;
+    left: -20px;
+    width: 200px;
+    z-index: 1050;
+    pointer-events: none;
+    transform: rotate(180deg) scaleX(-1);
+    opacity: 0.8;
+}
+
+/* Falling Blossoms Animation */
+.blossom-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+.blossom {
+    position: absolute;
+    background-color: #ffeb3b;
+    border-radius: 50% 0 50% 50%;
+    opacity: 0.7;
+    animation: fall linear infinite;
+}
+
+@keyframes fall {
+    0% {
+        transform: translateY(-10vh) translateX(0) rotate(0deg);
+    }
+
+    100% {
+        transform: translateY(110vh) translateX(100px) rotate(360deg);
+    }
 }
 
 .ticket-grid {
@@ -26,40 +81,44 @@
     justify-content: center;
     align-items: center;
     height: 60px;
-    border: 1px solid #ddd;
+    border: 2px solid #dd0000;
     border-radius: 8px;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.2s;
-    background-color: var(--primary-color);
-    color: white;
+    background-color: white;
+    color: var(--primary-color);
     user-select: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .ticket:hover {
     transform: scale(1.05);
-    background-color: var(--primary-hover);
+    border-color: var(--gold-color);
+    box-shadow: 0 0 10px var(--gold-color);
 }
 
 .ticket.sold {
-    background-color: #6c757d;
-    /* Gray */
+    background-color: #e0e0e0;
+    color: #9e9e9e;
+    border-color: #bdbdbd;
     cursor: not-allowed;
     opacity: 0.8;
 }
 
 .ticket.locked {
-    background-color: #ffc107;
-    /* Warning yellow for pending? Or just gray/disabled */
+    background-color: #fff9c4;
+    border-color: #fbc02d;
     cursor: not-allowed;
     opacity: 0.6;
 }
 
 .ticket.selected {
-    background-color: #198754;
-    /* Green for selected */
-    border: 3px solid #0f5132;
+    background-color: var(--primary-color);
+    color: white;
+    border: 3px solid var(--gold-color);
     transform: scale(1.1);
+    box-shadow: 0 0 15px var(--gold-color);
 }
 
 .pagination {
@@ -68,11 +127,22 @@
 
 .page-item.active .page-link {
     background-color: var(--primary-color);
-    border-color: var(--primary-color);
+    border-color: var(--gold-color);
+    color: white;
 }
 
 .page-link {
     color: var(--primary-color);
+}
+
+.btn-primary {
+    background-color: var(--primary-color) !important;
+    border-color: var(--gold-color) !important;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover) !important;
+    box-shadow: 0 0 10px var(--gold-color);
 }
 
 .hidden {
