@@ -21,7 +21,7 @@
             </div>
             <div class="letter-body">
                 {% if latest_message %}
-                <p class="message-text">"{{ latest_message.message }}"</p>
+                <p class="message-text">"{{ latest_message.message|linebreaksbr }}"</p>
                 <p class="message-footer">— Từ một người ẩn danh —</p>
                 {% else %}
                 <p class="message-text">"Chúc bạn một năm mới an khang thịnh vượng, vạn sự như ý!"</p>
