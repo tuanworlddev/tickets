@@ -11,7 +11,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponse
 from PIL import Image, ImageDraw, ImageFont
-from .models import Ticket
+from .models import Ticket, UserMessage
 
 def release_expired_tickets():
     cleanup_threshold = timezone.now() - timedelta(minutes=3)
@@ -27,7 +27,14 @@ def index(request):
     paginator = Paginator(tickets_list, 100)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    return render(request, 'fundraising/index.html', {'page_obj': page_obj})
+    
+    # Get random user message
+    latest_message = UserMessage.objects.order_by('?').first()
+    
+    return render(request, 'fundraising/index.html', {
+        'page_obj': page_obj,
+        'latest_message': latest_message
+    })
 
 def lock_tickets(request):
     if request.method == 'POST':
@@ -314,3 +321,19 @@ def download_all_tickets(request):
     response['Content-Disposition'] = 'attachment; filename="ve_so_tat_ca.zip"'
     
     return response
+
+def submit_message(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', 'Anonymous')
+        phone = request.POST.get('phone', '')
+        message = request.POST.get('message')
+        
+        if message:
+            UserMessage.objects.create(
+                name=name,
+                phone=phone,
+                message=message
+            )
+            return JsonResponse({'status': 'success'})
+        return JsonResponse({'status': 'error', 'message': 'Message is empty'}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=405)

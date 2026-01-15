@@ -118,13 +118,41 @@
                 <h5 class="modal-title" id="successModalLabel">Thanh toán thành công</h5>
             </div>
             <div class="modal-body">
-                <div class="text-center">
+                <div class="text-center mb-3">
                     <p class="text-success h1"><i class="bi bi-check-circle-fill"></i></p>
                     <p>Cảm ơn bạn! Giao dịch đã được ghi nhận.</p>
                 </div>
+                <hr>
+                <div class="mb-3">
+                    <label for="user-message" class="form-label">Gửi lời nhắn bạn muốn nói với người mình thương
+                        (tùy chọn):</label>
+                    <textarea class="form-control" id="user-message" rows="5"
+                        placeholder="Nhập lời nhắn của bạn tại đây..."></textarea>
+                    <div class="form-text text-danger mt-1">
+                        <i class="bi bi-shield-lock-fill"></i> Danh tính của bạn sẽ được ẩn danh tuyệt đối.
+                    </div>
+                </div>
             </div>
             <div class="modal-footer justify-content-center">
-                <a href="{% url 'index' %}" class="btn btn-success btn-lg">Về trang chủ</a>
+                <button type="button" class="btn btn-outline-danger" id="btn-send-message">Gửi lời
+                    nhắn
+                    <svg fill="#dc3545" height="16px" width="16px" version="1.1" id="Layer_1"
+                        xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                        viewBox="0 0 511.763 511.763" xml:space="preserve" stroke="#e2037a">
+                        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                        <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                        <g id="SVGRepo_iconCarrier">
+                            <g>
+                                <g>
+                                    <path
+                                        d="M511.716,9.802c-0.107-0.853-0.213-1.707-0.533-2.56c-0.107-0.32-0.213-0.747-0.32-1.067 c-0.533-1.173-1.28-2.24-2.133-3.2c-0.96-0.853-2.027-1.6-3.2-2.133c-0.32-0.107-0.747-0.32-1.067-0.32 c-0.853-0.213-1.707-0.427-2.56-0.427c-0.427,0-0.747,0-1.173,0c-0.96,0-2.027,0.213-2.987,0.533 c-0.213,0.107-0.427,0.107-0.64,0.213h-0.107L6.436,213.962c-5.44,2.347-7.893,8.64-5.547,14.08c0.96,2.24,2.667,4.053,4.8,5.12 l178.347,94.4l94.507,178.347c1.813,3.52,5.44,5.653,9.387,5.76h0.427c4.053-0.107,7.68-2.667,9.387-6.4L510.969,14.815v-0.107 c0.107-0.213,0.107-0.427,0.213-0.64c0.32-0.96,0.533-1.92,0.533-2.987C511.716,10.655,511.822,10.228,511.716,9.802z M35.342,224.522l418.88-182.08l-264.107,264L35.342,224.522z M287.182,476.362l-81.92-154.773l264-264.107L287.182,476.362z">
+                                    </path>
+                                </g>
+                            </g>
+                        </g>
+                    </svg>
+                </button>
+                <a href="{% url 'index' %}" class="btn btn-success">Về trang chủ</a>
             </div>
         </div>
     </div>
@@ -147,6 +175,9 @@
         var successModalEl = document.getElementById('successModal');
         var successModal = new bootstrap.Modal(successModalEl);
         successModal.show();
+
+        // Set suppression flag when successfully paid
+        sessionStorage.setItem('hide_letter_modal', 'true');
     }
 
     // Download All logic for mobile/desktop without ZIP
@@ -174,6 +205,49 @@
             }, delay);
             delay += 1000; // 1 second delay between downloads to prevent browser blocking
         });
+    });
+
+    // AJAX Message Submission
+    document.getElementById('btn-send-message').addEventListener('click', function () {
+        const message = document.getElementById('user-message').value;
+        if (!message.trim()) {
+            alert('Vui lòng nhập nội dung lời nhắn.');
+            return;
+        }
+
+        const btn = this;
+        btn.disabled = true;
+        btn.innerText = 'Đang gửi...';
+
+        fetch("{% url 'submit_message' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: new URLSearchParams({
+                'message': message,
+                'name': '{{ tickets.first.buyer_name }}', // Optionally store name but display anonymously
+                'phone': '{{ tickets.first.buyer_phone }}'
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    btn.innerText = 'Đã gửi ❤️';
+                    document.getElementById('user-message').disabled = true;
+                } else {
+                    alert('Có lỗi xảy ra: ' + data.message);
+                    btn.disabled = false;
+                    btn.innerText = 'Gửi lời nhắn';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi gửi lời nhắn.');
+                btn.disabled = false;
+                btn.innerText = 'Gửi lời nhắn';
+            });
     });
 </script>
 {% endblock %}

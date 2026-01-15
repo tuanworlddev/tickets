@@ -10,4 +10,5 @@ urlpatterns = [
     path('download-ticket/<int:ticket_id>/', views.download_ticket, name='download_ticket'),
     path('download-all-tickets/', views.download_all_tickets, name='download_all_tickets'),
     path('ticket-image/<int:ticket_id>/', views.serve_ticket_image, name='serve_ticket_image'),
+    path('submit-message/', views.submit_message, name='submit_message'),
 ]

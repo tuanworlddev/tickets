@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Ticket
+from .models import Ticket, UserMessage
 
 from django.utils.html import format_html
 
@@ -78,3 +78,9 @@ class TicketAdmin(admin.ModelAdmin):
         wb.save(response)
         return response
     export_to_excel.short_description = "Xuất ra Excel"
+
+@admin.register(UserMessage)
+class UserMessageAdmin(admin.ModelAdmin):
+    list_display = ('name', 'phone', 'message', 'created_at')
+    search_fields = ('name', 'phone', 'message')
+    ordering = ('-created_at',)
