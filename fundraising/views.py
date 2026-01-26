@@ -23,7 +23,7 @@ def release_expired_tickets():
 
 def index(request):
     release_expired_tickets()
-    tickets_list = Ticket.objects.all().order_by('number')
+    tickets_list = Ticket.objects.all().order_by('status', 'number')
     paginator = Paginator(tickets_list, 100)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)

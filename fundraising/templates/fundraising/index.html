@@ -205,14 +205,104 @@
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(213, 0, 0, 0.4);
     }
+
+    .random-box {
+        max-width: 520px;
+        padding: 16px 12px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #fff5f7, #fff);
+        border: 2px dashed #f06292;
+        box-shadow: 0 10px 30px rgba(216, 27, 96, 0.15);
+    }
+
+    .random-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #d81b60;
+        margin-bottom: 6px;
+    }
+
+    .random-subtitle {
+        font-size: 0.85rem;
+        color: #666;
+        margin-bottom: 18px;
+    }
+
+    .random-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .random-btn {
+        border: none;
+        background: white;
+        color: #d81b60;
+        border-radius: 50px;
+        padding: 12px 22px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(216, 27, 96, 0.2);
+        transition: all 0.25s ease;
+    }
+
+    .random-btn:hover {
+        transform: translateY(-2px) scale(1.05);
+        background: #fce4ec;
+    }
+
+    .random-btn.highlight {
+        background: linear-gradient(45deg, #ff5252, #d50000);
+        color: #fff;
+        box-shadow: 0 6px 20px rgba(213, 0, 0, 0.35);
+    }
+
+    .random-btn.highlight:hover {
+        background: linear-gradient(45deg, #d50000, #ff5252);
+    }
+
+    .random-hint {
+        margin-top: 14px;
+        font-size: 0.85rem;
+        color: #999;
+        font-style: italic;
+    }
 </style>
 
-<div class="row mb-4">
+<div class="row mb-3">
     <div class="col-12 text-center">
         <img src="https://iili.io/f82rVyJ.jpg" alt="Logo"
             class="d-inline-block align-text-top me-2 rounded img-fluid mb-3">
         <h1 class="display-5 fw-bold text-orange">Chương Trình Xổ Số - Gây Quỹ Thiện Nguyện</h1>
-        <p class="lead" style="font-size: 1.15rem;">🌸 Một tấm vé nhỏ – Một tấm lòng lớn 🌸</p>
+        <p class="lead mb-0" style="font-size: 1.15rem;">🌸 Một tấm vé nhỏ – Một tấm lòng lớn 🌸</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12 text-center">
+        <div class="random-box mx-auto">
+            <div class="random-title">
+                🎲 Thử vận may của bạn
+            </div>
+
+            <div class="random-subtitle">
+                Hệ thống sẽ chọn vé ngẫu nhiên còn trống
+            </div>
+
+            <div class="random-buttons">
+                <button type="button" class="random-btn" onclick="randomSelect(1)">
+                    1 vé
+                </button>
+                <button type="button" class="random-btn" onclick="randomSelect(3)">
+                    3 vé
+                </button>
+                <button type="button" class="random-btn highlight" onclick="randomSelect(5)">
+                    5 vé
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -365,6 +455,37 @@
     function closeLetter() {
         document.getElementById('letter-overlay').classList.add('d-none');
         sessionStorage.setItem('hide_letter_modal', 'true');
+    }
+
+    function randomSelect(count) {
+        // Get all available tickets that are NOT currently selected
+        // We look for elements with class 'ticket' that do not have 'sold' class and do not have 'selected' class
+        const availableTickets = Array.from(document.querySelectorAll('.ticket:not(.sold):not(.selected)'));
+
+        if (availableTickets.length === 0) {
+            alert('Không còn vé trống nào trên trang này để chọn thêm!');
+            return;
+        }
+
+        if (availableTickets.length < count) {
+            alert(`Chỉ còn ${availableTickets.length} vé trống trên trang này. Sẽ chọn tất cả.`);
+            count = availableTickets.length;
+        }
+
+        // Shuffle the array
+        const shuffled = availableTickets.sort(() => 0.5 - Math.random());
+
+        // Select the first 'count' elements
+        const toSelect = shuffled.slice(0, count);
+
+        toSelect.forEach(el => {
+            const num = el.dataset.number;
+            selectedTickets.add(num);
+            el.classList.add('selected');
+        });
+
+        saveSelection();
+        updateUI();
     }
 </script>
 {% endblock %}
