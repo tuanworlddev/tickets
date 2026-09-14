@@ -100,13 +100,13 @@ def send_customer_ticket_email(order):
     buyer_name = escape(order.buyer_name)
     seat_labels_html = escape(seat_labels)
     amount_display = format_currency(order.amount)
-    subject = f"Vé tham dự Hồn Việt - {seat_labels}"
+    subject = f"Vé tham dự Chương Trình văn nghệ Hồn Việt - {seat_labels}"
     text_body = (
         f"Chào {order.buyer_name},\n\n"
         "Ban tổ chức đã xác nhận thanh toán của bạn.\n"
         f"Ghế: {seat_labels}\n"
         f"Số tiền: {format_currency(order.amount)}\n\n"
-        "Cảm ơn bạn đã đồng hành cùng chương trình nghệ thuật Hồn Việt. "
+        "Cảm ơn bạn đã đồng hành cùng Chương Trình văn nghệ Hồn Việt. "
         "Vé của bạn được đính kèm trong email này.\n"
     )
     html_body = f"""
@@ -114,13 +114,14 @@ def send_customer_ticket_email(order):
         <p>Ban tổ chức đã xác nhận thanh toán của bạn.</p>
         <p><strong>Ghế:</strong> {seat_labels_html}<br>
         <strong>Số tiền:</strong> {amount_display}</p>
-        <p>Cảm ơn bạn đã đồng hành cùng chương trình nghệ thuật <strong>Hồn Việt</strong>. Vé của bạn được đính kèm trong email này.</p>
+        <p>Cảm ơn bạn đã đồng hành cùng <strong>Chương Trình văn nghệ Hồn Việt</strong>. Vé của bạn được đính kèm trong email này.</p>
     """
     email = EmailMultiAlternatives(
         subject=subject,
         body=text_body,
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[order.buyer_email],
+        reply_to=[settings.PAYMENT_ADMIN_EMAIL],
     )
     email.attach_alternative(html_body, "text/html")
     for ticket in tickets:
