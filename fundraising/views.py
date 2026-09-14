@@ -9,9 +9,14 @@ from datetime import timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import transaction
 from django.contrib import messages
+from django.core.exceptions import ValidationError
+from django.core.mail import EmailMultiAlternatives
+from django.core.validators import validate_email
 from django.http import JsonResponse, HttpResponse
+from django.urls import reverse
+from django.utils.html import escape
 from PIL import Image, ImageDraw, ImageFont
-from .models import SEAT_COLUMNS, SEAT_ROWS, Ticket, UserMessage, format_currency
+from .models import PaymentOrder, SEAT_COLUMNS, SEAT_ROWS, Ticket, UserMessage, format_currency
 
 VIETQR_BANK_BIN = "970422"  # MB Bank
 VIETQR_ACCOUNT_NO = "0975497557"
@@ -38,6 +43,93 @@ def build_vietqr_url(amount, buyer_name):
         f"&addInfo={quote(transfer_note)}"
         f"&accountName={quote(VIETQR_ACCOUNT_NAME)}"
     )
+
+def get_ticket_image_bytes(ticket):
+    img = generate_ticket_image(ticket)
+    buffer = io.BytesIO()
+    img.save(buffer, format='JPEG', quality=95)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+def send_payment_confirmation_email(request, order):
+    tickets = order.tickets.all().order_by('number')
+    seat_labels = ", ".join(ticket.seat_label for ticket in tickets)
+    confirm_url = request.build_absolute_uri(
+        reverse('owner_confirm_payment', args=[order.confirmation_token])
+    )
+    buyer_name = escape(order.buyer_name)
+    buyer_email = escape(order.buyer_email)
+    seat_labels_html = escape(seat_labels)
+    amount_display = format_currency(order.amount)
+    subject = f"[Hồn Việt] Xác nhận thanh toán - {order.buyer_name}"
+    text_body = (
+        "Có khách báo đã thanh toán vé Hồn Việt.\n\n"
+        f"Họ tên: {order.buyer_name}\n"
+        f"Email: {order.buyer_email}\n"
+        f"Ghế: {seat_labels}\n"
+        f"Số tiền: {format_currency(order.amount)}\n\n"
+        f"Bấm link này để xác nhận và gửi vé cho khách: {confirm_url}\n"
+    )
+    html_body = f"""
+        <p>Có khách báo đã thanh toán vé <strong>Hồn Việt</strong>.</p>
+        <table cellpadding="6" cellspacing="0" border="0">
+            <tr><td><strong>Họ tên</strong></td><td>{buyer_name}</td></tr>
+            <tr><td><strong>Email</strong></td><td>{buyer_email}</td></tr>
+            <tr><td><strong>Ghế</strong></td><td>{seat_labels_html}</td></tr>
+            <tr><td><strong>Số tiền</strong></td><td>{amount_display}</td></tr>
+        </table>
+        <p>
+            <a href="{confirm_url}" style="display:inline-block;padding:12px 18px;background:#7c3f1d;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">
+                Xác nhận thanh toán và gửi vé
+            </a>
+        </p>
+        <p>Nếu nút không mở được, dùng link này:<br>{confirm_url}</p>
+    """
+    email = EmailMultiAlternatives(
+        subject=subject,
+        body=text_body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[settings.PAYMENT_ADMIN_EMAIL],
+    )
+    email.attach_alternative(html_body, "text/html")
+    email.send()
+
+def send_customer_ticket_email(order):
+    tickets = order.tickets.all().order_by('number')
+    seat_labels = ", ".join(ticket.seat_label for ticket in tickets)
+    buyer_name = escape(order.buyer_name)
+    seat_labels_html = escape(seat_labels)
+    amount_display = format_currency(order.amount)
+    subject = f"Vé tham dự Hồn Việt - {seat_labels}"
+    text_body = (
+        f"Chào {order.buyer_name},\n\n"
+        "Ban tổ chức đã xác nhận thanh toán của bạn.\n"
+        f"Ghế: {seat_labels}\n"
+        f"Số tiền: {format_currency(order.amount)}\n\n"
+        "Cảm ơn bạn đã đồng hành cùng chương trình nghệ thuật Hồn Việt. "
+        "Vé của bạn được đính kèm trong email này.\n"
+    )
+    html_body = f"""
+        <p>Chào <strong>{buyer_name}</strong>,</p>
+        <p>Ban tổ chức đã xác nhận thanh toán của bạn.</p>
+        <p><strong>Ghế:</strong> {seat_labels_html}<br>
+        <strong>Số tiền:</strong> {amount_display}</p>
+        <p>Cảm ơn bạn đã đồng hành cùng chương trình nghệ thuật <strong>Hồn Việt</strong>. Vé của bạn được đính kèm trong email này.</p>
+    """
+    email = EmailMultiAlternatives(
+        subject=subject,
+        body=text_body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[order.buyer_email],
+    )
+    email.attach_alternative(html_body, "text/html")
+    for ticket in tickets:
+        email.attach(
+            f"ve_hon_viet_{ticket.seat_label}.jpg",
+            get_ticket_image_bytes(ticket),
+            "image/jpeg",
+        )
+    email.send()
 
 def release_expired_tickets():
     cleanup_threshold = timezone.now() - timedelta(minutes=3)
@@ -152,11 +244,23 @@ def checkout(request):
     total_amount = sum(ticket.price for ticket in tickets)
     
     if request.method == 'POST':
-        name = request.POST.get('name')
-        phone = request.POST.get('phone')
+        name = request.POST.get('name', '').strip()
+        email = request.POST.get('email', '').strip()
         
-        if not name or not phone:
-             messages.error(request, 'Vui lòng điền đầy đủ thông tin.')
+        if not name:
+             messages.error(request, 'Vui lòng nhập họ và tên.')
+             return render(request, 'fundraising/checkout.html', {
+                 'tickets': tickets,
+                 'total_amount': total_amount,
+                 'total_amount_display': format_currency(total_amount),
+                 'expiration_timestamp': expiration_timestamp,
+                 'event': EVENT_INFO,
+             })
+
+        try:
+            validate_email(email)
+        except ValidationError:
+             messages.error(request, 'Vui lòng nhập đúng địa chỉ email để nhận vé.')
              return render(request, 'fundraising/checkout.html', {
                  'tickets': tickets,
                  'total_amount': total_amount,
@@ -166,8 +270,8 @@ def checkout(request):
              })
 
         request.session['pending_buyer'] = {
-            'name': name.strip(),
-            'phone': phone.strip(),
+            'name': name,
+            'email': email,
         }
 
         qr_url = build_vietqr_url(total_amount, name)
@@ -241,17 +345,87 @@ def confirm_payment(request):
             messages.error(request, 'Thời gian giữ ghế đã hết.')
             return redirect('index')
 
-        tickets.update(
-            status='SOLD',
+        total_amount = sum(ticket.price for ticket in tickets)
+        order = PaymentOrder.objects.create(
             buyer_name=buyer['name'],
-            buyer_phone=buyer['phone'],
+            buyer_email=buyer['email'],
+            amount=total_amount,
+        )
+        order.tickets.set(tickets)
+
+        tickets.update(
+            status='PENDING',
+            buyer_name=buyer['name'],
+            buyer_email=buyer['email'],
             locked_at=None,
         )
 
-    request.session['last_sold_tickets'] = locked_ids
+    try:
+        send_payment_confirmation_email(request, order)
+    except Exception as e:
+        print(f"Error sending owner confirmation email: {e}")
+        messages.warning(request, 'Thanh toán đã được ghi nhận, nhưng email xác nhận gửi cho ban tổ chức đang gặp lỗi.')
+
+    request.session['pending_order_id'] = str(order.id)
     request.session.pop('locked_tickets', None)
     request.session.pop('pending_buyer', None)
-    return redirect('ticket_success')
+    return redirect('payment_pending', order_id=order.id)
+
+def payment_pending(request, order_id):
+    order = get_object_or_404(PaymentOrder, id=order_id)
+    return render(request, 'fundraising/payment_pending.html', {
+        'order': order,
+        'tickets': order.tickets.all().order_by('number'),
+        'amount_display': format_currency(order.amount),
+        'event': EVENT_INFO,
+    })
+
+def owner_confirm_payment(request, token):
+    order = get_object_or_404(PaymentOrder, confirmation_token=token)
+    already_confirmed = order.status == 'CONFIRMED'
+    email_sent = False
+    email_error = None
+
+    if not already_confirmed:
+        with transaction.atomic():
+            order = PaymentOrder.objects.select_for_update().get(pk=order.pk)
+            tickets = Ticket.objects.select_for_update().filter(payment_orders=order).order_by('number')
+            if order.status != 'PENDING' or tickets.exclude(status='PENDING').exists():
+                return render(request, 'fundraising/owner_confirmed.html', {
+                    'order': order,
+                    'tickets': tickets,
+                    'amount_display': format_currency(order.amount),
+                    'event': EVENT_INFO,
+                    'email_sent': False,
+                    'email_error': 'Đơn này không còn ở trạng thái chờ xác nhận.',
+                })
+
+            tickets.update(
+                status='SOLD',
+                buyer_name=order.buyer_name,
+                buyer_email=order.buyer_email,
+                locked_at=None,
+            )
+            order.status = 'CONFIRMED'
+            order.confirmed_at = timezone.now()
+            order.save(update_fields=['status', 'confirmed_at'])
+
+        try:
+            send_customer_ticket_email(order)
+            email_sent = True
+        except Exception as e:
+            print(f"Error sending customer ticket email: {e}")
+            email_error = 'Đã xác nhận thanh toán, nhưng email gửi vé cho khách đang gặp lỗi.'
+
+    return render(request, 'fundraising/owner_confirmed.html', {
+        'order': order,
+        'tickets': order.tickets.all().order_by('number'),
+        'amount_display': format_currency(order.amount),
+        'event': EVENT_INFO,
+        'already_confirmed': already_confirmed,
+        'email_sent': email_sent,
+        'email_error': email_error,
+    })
 
 def ticket_success(request):
     sold_ids = request.session.get('last_sold_tickets', [])
@@ -283,7 +457,7 @@ def cancel_transaction(request):
     sold_ids = request.session.get('last_sold_tickets', [])
     if sold_ids:
         # Revert SOLD tickets to AVAILABLE
-        Ticket.objects.filter(number__in=sold_ids, status='SOLD').update(status='AVAILABLE', buyer_name=None, buyer_phone=None)
+        Ticket.objects.filter(number__in=sold_ids, status='SOLD').update(status='AVAILABLE', buyer_name=None, buyer_phone=None, buyer_email=None)
         if 'last_sold_tickets' in request.session:
             del request.session['last_sold_tickets']
         messages.info(request, 'Đã hủy giao dịch.')

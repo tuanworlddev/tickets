@@ -35,9 +35,9 @@
                             placeholder="VD: Nguyễn Văn A">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Số điện thoại</label>
-                        <input type="tel" name="phone" class="form-control" required placeholder="VD: 0912345678"
-                            pattern="0[0-9]{9}" maxlength="10" inputmode="numeric">
+                        <label class="form-label">Địa chỉ email</label>
+                        <input type="email" name="email" class="form-control" required
+                            placeholder="VD: tenban@example.com">
                     </div>
 
                     <div class="d-grid gap-2">
@@ -61,24 +61,14 @@
         const timerElement = document.getElementById("timer");
         const expiresAt = Number("{{ expiration_timestamp|default:0 }}") * 1000;
 
-        const phoneInput = document.querySelector('input[name="phone"]');
+        const emailInput = document.querySelector('input[name="email"]');
         const form = document.querySelector('form');
 
-        phoneInput.addEventListener("input", function () {
-            // chỉ cho nhập số
-            this.value = this.value.replace(/[^0-9]/g, "");
-        });
-
         form.addEventListener("submit", function (e) {
-            const phone = phoneInput.value;
-
-            // regex số điện thoại VN: 10 số, bắt đầu bằng 0
-            const regex = /^0\d{9}$/;
-
-            if (!regex.test(phone)) {
+            if (!emailInput.checkValidity()) {
                 e.preventDefault();
-                alert("Vui lòng nhập đúng số điện thoại 10 số bắt đầu bằng 0. Ví dụ: 0912345678");
-                phoneInput.focus();
+                alert("Vui lòng nhập đúng địa chỉ email để nhận vé.");
+                emailInput.focus();
             }
         });
 

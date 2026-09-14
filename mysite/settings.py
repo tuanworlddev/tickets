@@ -29,6 +29,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-dev-key')
 # VietQR Config
 VIETQR_CLIENT_ID = os.getenv('VIETQR_CLIENT_ID')
 VIETQR_API_KEY = os.getenv('VIETQR_API_KEY')
+PAYMENT_ADMIN_EMAIL = os.getenv('PAYMENT_ADMIN_EMAIL', 'nguyentdieuhang99.51@gmail.com')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
@@ -44,6 +45,22 @@ CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'False') == 'True'
 SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '0'))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'False') == 'True'
 SECURE_HSTS_PRELOAD = os.getenv('SECURE_HSTS_PRELOAD', 'False') == 'True'
+
+MAIL_ADDRESS = os.getenv('MAIL_ADDRESS')
+MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
+MAIL_FROM = os.getenv('MAIL_FROM', MAIL_ADDRESS or 'no-reply@localhost')
+
+if MAIL_ADDRESS and MAIL_PASSWORD:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+    EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+    EMAIL_HOST_USER = MAIL_ADDRESS
+    EMAIL_HOST_PASSWORD = MAIL_PASSWORD
+else:
+    EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+
+DEFAULT_FROM_EMAIL = MAIL_FROM
 
 
 # Application definition

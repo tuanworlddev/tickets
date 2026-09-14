@@ -32,6 +32,7 @@ class Command(BaseCommand):
             status='SOLD',
             buyer_name='Ghế khách mời',
             buyer_phone='',
+            buyer_email='',
             locked_at=None,
         )
         self.stdout.write(self.style.SUCCESS(f'Marked {len(guest_numbers)} guest seats'))

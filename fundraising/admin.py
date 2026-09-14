@@ -1,13 +1,13 @@
 from django.contrib import admin
-from .models import Ticket, UserMessage
+from .models import PaymentOrder, Ticket, UserMessage, format_currency
 
 from django.utils.html import format_html
 
 @admin.register(Ticket)
 class TicketAdmin(admin.ModelAdmin):
-    list_display = ('seat_label_display', 'seat_type_display', 'price_display_admin', 'status_badge', 'buyer_name', 'buyer_phone', 'locked_at', 'updated_at')
+    list_display = ('seat_label_display', 'seat_type_display', 'price_display_admin', 'status_badge', 'buyer_name', 'buyer_email', 'locked_at', 'updated_at')
     list_filter = ('status',)
-    search_fields = ('number', 'buyer_name', 'buyer_phone')
+    search_fields = ('number', 'buyer_name', 'buyer_email')
     ordering = ('number',)
     readonly_fields = ('updated_at',)
     actions = ['mark_as_sold', 'mark_as_available', 'export_to_excel']
@@ -17,7 +17,7 @@ class TicketAdmin(admin.ModelAdmin):
             'fields': ('number', 'status')
         }),
         ('Thông tin người mua', {
-            'fields': ('buyer_name', 'buyer_phone')
+            'fields': ('buyer_name', 'buyer_email')
         }),
         ('Thời gian', {
             'fields': ('locked_at', 'updated_at'),
@@ -29,6 +29,7 @@ class TicketAdmin(admin.ModelAdmin):
         colors = {
             'AVAILABLE': 'green',
             'LOCKED': 'orange',
+            'PENDING': '#0d6efd',
             'SOLD': 'red',
         }
         color = colors.get(obj.status, 'gray')
@@ -59,7 +60,7 @@ class TicketAdmin(admin.ModelAdmin):
     mark_as_sold.short_description = "Đánh dấu là ĐÃ BÁN"
 
     def mark_as_available(self, request, queryset):
-        queryset.update(status='AVAILABLE', buyer_name=None, buyer_phone=None, locked_at=None)
+        queryset.update(status='AVAILABLE', buyer_name=None, buyer_phone=None, buyer_email=None, locked_at=None)
         self.message_user(request, f"Đã hủy và mở lại {queryset.count()} ghế.")
     mark_as_available.short_description = "Hủy ghế / Xóa thông tin người mua"
 
@@ -73,7 +74,7 @@ class TicketAdmin(admin.ModelAdmin):
         ws = wb.active
         ws.title = "Tickets"
         
-        columns = ['Ghế', 'Loại ghế', 'Giá vé', 'Trạng Thái', 'Tên Người Mua', 'SĐT', 'Thời gian Khóa', 'Cập nhật lần cuối']
+        columns = ['Ghế', 'Loại ghế', 'Giá vé', 'Trạng Thái', 'Tên Người Mua', 'Email', 'Thời gian Khóa', 'Cập nhật lần cuối']
         ws.append(columns)
         
         for ticket in queryset:
@@ -85,7 +86,7 @@ class TicketAdmin(admin.ModelAdmin):
                 ticket.price,
                 ticket.get_status_display(),
                 ticket.buyer_name,
-                ticket.buyer_phone,
+                ticket.buyer_email,
                 start_time,
                 updated_time,
             ]
@@ -94,6 +95,25 @@ class TicketAdmin(admin.ModelAdmin):
         wb.save(response)
         return response
     export_to_excel.short_description = "Xuất ra Excel"
+
+
+@admin.register(PaymentOrder)
+class PaymentOrderAdmin(admin.ModelAdmin):
+    list_display = ('buyer_name', 'buyer_email', 'amount_display', 'status', 'seat_labels_display', 'created_at', 'confirmed_at')
+    list_filter = ('status', 'created_at', 'confirmed_at')
+    search_fields = ('buyer_name', 'buyer_email')
+    readonly_fields = ('id', 'confirmation_token', 'created_at', 'confirmed_at', 'seat_labels_display')
+    filter_horizontal = ('tickets',)
+    ordering = ('-created_at',)
+
+    def amount_display(self, obj):
+        return format_currency(obj.amount)
+    amount_display.short_description = 'Số tiền'
+
+    def seat_labels_display(self, obj):
+        return obj.seat_labels
+    seat_labels_display.short_description = 'Ghế'
+
 
 @admin.register(UserMessage)
 class UserMessageAdmin(admin.ModelAdmin):
@@ -120,7 +140,7 @@ class UserMessageAdmin(admin.ModelAdmin):
         ws = wb.active
         ws.title = "Góp ý khách hàng"
 
-        columns = ['Họ và tên', 'Số điện thoại', 'Nội dung góp ý', 'Thời gian gửi']
+        columns = ['Họ và tên', 'Thông tin liên hệ', 'Nội dung góp ý', 'Thời gian gửi']
         ws.append(columns)
 
         for item in queryset:

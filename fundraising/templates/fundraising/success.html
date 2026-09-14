@@ -307,7 +307,7 @@
                 body: new URLSearchParams({
                     'message': message,
                     'name': '{{ tickets.first.buyer_name|default:"Khách vãng lai" }}',
-                    'phone': '{{ tickets.first.buyer_phone|default:"" }}'
+                    'phone': '{{ tickets.first.buyer_email|default:"" }}'
                 })
             })
                 .then(response => response.json())
