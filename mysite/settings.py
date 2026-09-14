@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+from email.utils import formataddr
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -48,7 +49,7 @@ SECURE_HSTS_PRELOAD = os.getenv('SECURE_HSTS_PRELOAD', 'False') == 'True'
 
 MAIL_ADDRESS = os.getenv('MAIL_ADDRESS')
 MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
-MAIL_FROM = os.getenv('MAIL_FROM', MAIL_ADDRESS or 'no-reply@localhost')
+MAIL_FROM = os.getenv('MAIL_FROM')
 
 if MAIL_ADDRESS and MAIL_PASSWORD:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -60,7 +61,10 @@ if MAIL_ADDRESS and MAIL_PASSWORD:
 else:
     EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 
-DEFAULT_FROM_EMAIL = MAIL_FROM
+if MAIL_FROM and '@' not in MAIL_FROM and MAIL_ADDRESS:
+    DEFAULT_FROM_EMAIL = formataddr((MAIL_FROM, MAIL_ADDRESS))
+else:
+    DEFAULT_FROM_EMAIL = MAIL_FROM or MAIL_ADDRESS or 'no-reply@localhost'
 
 
 # Application definition
