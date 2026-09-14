@@ -1,313 +1,297 @@
 {% extends 'fundraising/base.html' %}
+{% load static %}
 
 {% block content %}
-<!-- Letter Modal -->
-<div id="letter-overlay" class="letter-overlay d-none">
-    <div class="envelope-wrapper" id="envelope-wrapper">
-        <div class="envelope">
-            <div class="flap"></div>
-            <div class="body"></div>
-            <div class="letter-preview">
-                <button class="btn btn-heart" onclick="openLetter()">Bạn có 1 lời nhắn</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="letter-content-wrapper d-none" style="min-width: 400px;" id="letter-content-wrapper">
-        <div class="letter-paper">
-            <div class="letter-header">
-                <i class="bi bi-heart-fill text-danger"></i>
-                <h3 class="romantic-title">Lời nhắn yêu thương</h3>
-            </div>
-            <div class="letter-body">
-                {% if latest_message %}
-                <p class="message-text">"{{ latest_message.message|linebreaksbr }}"</p>
-                <p class="message-footer">— {{ latest_message.name }} —</p>
-                {% else %}
-                <p class="message-text">"Chúc bạn một năm mới an khang thịnh vượng, vạn sự như ý!"</p>
-                <p class="message-footer">— Từ SVCG An Thượng —</p>
-                {% endif %}
-            </div>
-            <!-- <div class="letter-footer">
-                <button class="btn btn-tet" onclick="closeLetter()">Tết Tấn Tới</button>
-            </div> -->
-        </div>
-    </div>
-</div>
-
 <style>
-    .letter-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.7);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        backdrop-filter: blur(5px);
+    .seat-page {
+        --seat-size: clamp(24px, 6.2vw, 44px);
+        --row-label-width: clamp(20px, 5vw, 34px);
+        --stage-gap: clamp(34px, 8vw, 64px);
+        color: #472817;
     }
 
-    /* Envelope Styles */
-    .envelope-wrapper {
-        perspective: 1000px;
-    }
-
-    .envelope {
-        width: 300px;
-        height: 200px;
-        background: #f8bbd0;
-        /* Soft pink */
+    .event-hero {
+        min-height: 360px;
+        border-radius: 8px;
+        overflow: hidden;
         position: relative;
-        border-radius: 4px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    }
-
-    .envelope .flap {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 0;
-        height: 0;
-        border-left: 150px solid transparent;
-        border-right: 150px solid transparent;
-        border-top: 100px solid #f06292;
-        /* Stronger pink */
-        z-index: 3;
-        transition: transform 0.5s;
-        transform-origin: top;
-    }
-
-    .envelope .body {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 0;
-        height: 0;
-        border-left: 150px solid transparent;
-        border-right: 150px solid transparent;
-        border-bottom: 200px solid #f48fb1;
-        z-index: 2;
-    }
-
-    .letter-preview {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 4;
-        text-align: center;
-        width: 100%;
-    }
-
-    .btn-heart {
-        background-color: #d81b60;
-        color: white;
-        border-radius: 30px;
-        padding: 10px 20px;
-        font-weight: bold;
-        border: none;
-        box-shadow: 0 4px 15px rgba(216, 27, 96, 0.4);
-        transition: 0.3s;
-    }
-
-    .btn-heart:hover {
-        background-color: #ad1457;
-        color: white;
-        transform: scale(1.05);
-    }
-
-    /* Letter Paper Styles */
-    .letter-paper {
-        width: 90%;
-        max-width: 450px;
-        background: #fffafa;
-        /* Snow white */
-        border: 2px solid #f8bbd0;
-        border-radius: 15px;
-        padding: 40px;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
-        position: relative;
-        background-image: linear-gradient(rgba(248, 187, 208, 0.1) 1px, transparent 1px);
-        background-size: 100% 30px;
-        animation: slideIn 0.5s ease-out;
-    }
-
-    @keyframes slideIn {
-        from {
-            transform: translateY(50px);
-            opacity: 0;
-        }
-
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
-
-    .romantic-title {
-        color: #d81b60;
-        font-family: 'Dancing Script', cursive, serif;
-        margin-top: 10px;
-        font-weight: bold;
-    }
-
-    .letter-header {
-        text-align: center;
-        margin-bottom: 20px;
-    }
-
-    .letter-body {
-        min-height: 150px;
+        background:
+            linear-gradient(90deg, rgba(45, 24, 12, 0.82), rgba(86, 51, 25, 0.46), rgba(45, 24, 12, 0.22)),
+            url("{% static 'fundraising/images/Poster.jpg' %}") center / cover no-repeat;
         display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
+        align-items: flex-start;
+        padding: clamp(22px, 3.2vw, 42px) clamp(20px, 4vw, 44px);
+        box-shadow: 0 18px 42px rgba(68, 38, 18, 0.22);
     }
 
-    .message-text {
-        font-size: 1.25rem;
-        font-style: italic;
-        color: #444;
-        line-height: 1.6;
-        margin-bottom: 20px;
-    }
-
-    .message-footer {
-        color: #888;
-        font-size: 0.9rem;
-    }
-
-    .letter-footer {
-        text-align: center;
-        margin-top: 30px;
-    }
-
-    .btn-tet {
-        background: linear-gradient(45deg, #ff5252, #d50000);
-        color: white;
-        border: none;
-        padding: 12px 30px;
-        border-radius: 50px;
-        font-weight: bold;
+    .event-kicker {
+        color: #f4d79b;
         text-transform: uppercase;
-        letter-spacing: 1px;
-        box-shadow: 0 4px 15px rgba(213, 0, 0, 0.3);
-        transition: 0.3s;
+        font-weight: 800;
+        font-size: clamp(0.78rem, 1.2vw, 0.88rem);
+        letter-spacing: 0.5px;
+        margin-bottom: clamp(6px, 1vw, 10px);
     }
 
-    .btn-tet:hover {
-        background: linear-gradient(45deg, #d50000, #ff5252);
-        color: white;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(213, 0, 0, 0.4);
+    .event-title {
+        color: #fff4d6;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: clamp(3rem, 9vw, 6.5rem);
+        line-height: 0.95;
+        margin: 0 0 12px;
+        text-transform: uppercase;
     }
 
-    .random-box {
-        max-width: 520px;
-        padding: 16px 12px;
-        border-radius: 20px;
-        background: linear-gradient(135deg, #fff5f7, #fff);
-        border: 2px dashed #f06292;
-        box-shadow: 0 10px 30px rgba(216, 27, 96, 0.15);
-    }
-
-    .random-title {
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: #d81b60;
-        margin-bottom: 6px;
-    }
-
-    .random-subtitle {
-        font-size: 0.85rem;
-        color: #666;
+    .event-subtitle {
+        color: #f8e1ad;
+        font-size: clamp(1rem, 2.2vw, 1.3rem);
         margin-bottom: 18px;
     }
 
-    .random-buttons {
+    .event-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        color: #fff9ea;
+        font-weight: 700;
+    }
+
+    .event-meta span,
+    .social-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 36px;
+        padding: 7px 12px;
+        border: 1px solid rgba(248, 216, 148, 0.55);
+        border-radius: 999px;
+        background: rgba(45, 24, 12, 0.42);
+        color: #fff9ea;
+        text-decoration: none;
+        font-size: 12px;
+    }
+
+    .social-link:hover {
+        background: rgba(248, 216, 148, 0.2);
+        color: #fff;
+    }
+
+    .booking-heading {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        margin: 28px 0 14px;
+    }
+
+    .booking-heading h2 {
+        margin: 0;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: clamp(1.7rem, 4vw, 2.6rem);
+        color: #6f3f1f;
+    }
+
+    .ticket-preview {
+        display: grid;
+        grid-template-columns: 112px minmax(0, 1fr);
+        gap: 14px;
+        align-items: center;
+        color: #6f3f1f;
+        max-width: 430px;
+    }
+
+    .ticket-preview img {
+        width: 112px;
+        aspect-ratio: 1 / 1.42;
+        object-fit: cover;
+        border-radius: 6px;
+        box-shadow: 0 8px 18px rgba(68, 38, 18, 0.18);
+    }
+
+    .seat-map-shell {
+        display: block;
+    }
+
+    .seat-map-scroll {
+        overflow-x: auto;
+        padding-bottom: 6px;
+    }
+
+    .seat-map {
+        min-width: calc(var(--row-label-width) + (var(--seat-size) * 10) + var(--stage-gap) + 42px);
+        display: grid;
+        grid-template-columns: var(--row-label-width) repeat(5, var(--seat-size)) var(--stage-gap) repeat(5, var(--seat-size));
+        grid-template-rows: 34px 58px repeat(12, var(--seat-size)) 28px;
+        gap: 4px;
+        align-items: stretch;
+    }
+
+    .seat-map-title {
+        grid-column: 2 / 13;
+        grid-row: 1;
+        background: #b9853d;
+        color: #1f1108;
+        font-weight: 800;
+        font-size: 0.85rem;
         display: flex;
         justify-content: center;
-        gap: 12px;
-        flex-wrap: wrap;
+        align-items: center;
+        text-transform: uppercase;
     }
 
-    .random-btn {
-        border: none;
-        background: white;
-        color: #d81b60;
-        border-radius: 50px;
-        padding: 12px 22px;
-        font-weight: 600;
-        font-size: 1rem;
-        cursor: pointer;
-        box-shadow: 0 4px 12px rgba(216, 27, 96, 0.2);
-        transition: all 0.25s ease;
+    .main-stage {
+        grid-column: 2 / 13;
+        grid-row: 2;
+        background: #f2d7a6;
+        border: 1px solid #6f3f1f;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: clamp(1rem, 2.3vw, 1.55rem);
+        font-weight: 800;
     }
 
-    .random-btn:hover {
-        transform: translateY(-2px) scale(1.05);
-        background: #fce4ec;
+    .center-stage {
+        grid-column: 7;
+        grid-row: 3 / 15;
+        background: #f2d7a6;
+        border: 1px solid #6f3f1f;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: 700;
+        text-align: center;
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        letter-spacing: 0;
     }
 
-    .random-btn.highlight {
-        background: linear-gradient(45deg, #ff5252, #d50000);
+    .row-label,
+    .section-label {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: 700;
+        color: #222;
+        font-size: 0.8rem;
+    }
+
+    .seat-button {
+        width: 100%;
+        height: 100%;
+        border: 1px solid #222;
+        border-radius: 3px;
+        background: #fff8e8;
+        color: #3a2113;
+        font-size: clamp(0.45rem, 1.35vw, 0.68rem);
+        font-weight: 700;
+        line-height: 1;
+        padding: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        letter-spacing: 0;
+        transition: background 0.15s, color 0.15s, transform 0.15s;
+    }
+
+    .seat-button:hover:not(:disabled) {
+        transform: scale(1.06);
+        border-color: #a96f2d;
+    }
+
+    .seat-button.selected {
+        background: #7c3f1d;
         color: #fff;
-        box-shadow: 0 6px 20px rgba(213, 0, 0, 0.35);
+        border-color: #d8af60;
     }
 
-    .random-btn.highlight:hover {
-        background: linear-gradient(45deg, #d50000, #ff5252);
+    .seat-button.sold {
+        background: #6c757d;
+        color: #fff;
+        cursor: not-allowed;
+        opacity: 0.8;
     }
 
-    .random-hint {
-        margin-top: 14px;
-        font-size: 0.85rem;
-        color: #999;
-        font-style: italic;
+    .seat-button.guest {
+        background: #b43b27;
+        color: #fff;
+        cursor: not-allowed;
+    }
+
+    .selection-bar {
+        position: sticky;
+        bottom: 0;
+        z-index: 20;
+        background: rgba(255, 248, 232, 0.96);
+        border-top: 1px solid #e5c78d;
+        padding: 12px 0;
+        backdrop-filter: blur(8px);
+    }
+
+    @media (max-width: 760px) {
+        .event-hero {
+            min-height: 300px;
+            padding: 18px;
+        }
+
+        .booking-heading {
+            display: block;
+        }
+
+        .ticket-preview {
+            margin-top: 12px;
+        }
+    }
+
+    @media (orientation: landscape) and (max-height: 520px) {
+        .seat-page {
+            --seat-size: clamp(20px, 4.6vh, 28px);
+            --row-label-width: 22px;
+            --stage-gap: 42px;
+        }
+
+        .seat-map {
+            grid-template-rows: 24px 36px repeat(12, var(--seat-size)) 20px;
+            gap: 2px;
+        }
+
+        .row.mb-3,
+        .row.mb-4 {
+            margin-bottom: 0.5rem !important;
+        }
+
+        .legend-row {
+            display: none !important;
+        }
+
+        .seat-button {
+            font-size: 0.42rem;
+        }
     }
 </style>
 
-<div class="row mb-3">
-    <div class="col-12 text-center">
-        <img src="https://iili.io/f82rVyJ.jpg" alt="Logo"
-            class="d-inline-block align-text-top me-2 rounded img-fluid mb-3">
-        <h1 class="display-5 fw-bold text-orange">Chương Trình Xổ Số - Gây Quỹ Thiện Nguyện</h1>
-        <p class="lead mb-0" style="font-size: 1.15rem;">🌸 Một tấm vé nhỏ – Một tấm lòng lớn 🌸</p>
-    </div>
-</div>
-
-<div class="row mb-4">
-    <div class="col-12 text-center">
-        <div class="random-box mx-auto">
-            <div class="random-title">
-                🎲 Thử vận may của bạn
-            </div>
-
-            <div class="random-subtitle">
-                Hệ thống sẽ chọn vé ngẫu nhiên còn trống
-            </div>
-
-            <div class="random-buttons">
-                <button type="button" class="random-btn" onclick="randomSelect(1)">
-                    1 vé
-                </button>
-                <button type="button" class="random-btn" onclick="randomSelect(3)">
-                    3 vé
-                </button>
-                <button type="button" class="random-btn highlight" onclick="randomSelect(5)">
-                    5 vé
-                </button>
-            </div>
+<div class="seat-page">
+<section class="event-hero mb-4">
+    <div>
+        <div class="event-kicker">{{ event.type }}</div>
+        <h1 class="event-title">{{ event.name }}</h1>
+        <p class="event-subtitle">{{ event.subtitle }}</p>
+        <div class="event-meta">
+            <span><i class="bi bi-clock"></i>{{ event.time }}</span>
+            <span><i class="bi bi-calendar-event"></i>{{ event.date }}</span>
+            <span><i class="bi bi-geo-alt"></i>{{ event.venue }}</span>
+            <a class="social-link" href="{{ event.tiktok_url }}" target="_blank" rel="noopener" aria-label="TikTok Hồn Việt">
+                <i class="bi bi-tiktok"></i>TikTok
+            </a>
+            <a class="social-link" href="{{ event.facebook_url }}" target="_blank" rel="noopener" aria-label="Facebook Hồn Việt">
+                <i class="bi bi-facebook"></i>Facebook
+            </a>
         </div>
     </div>
-</div>
+</section>
+
 
 <div class="row mb-3">
-    <div class="col-md-12 d-flex justify-content-center gap-3">
+    <div class="col-md-12 d-flex justify-content-center gap-3 legend-row">
         <div class="d-flex align-items-center">
             <div
                 style="width:20px;height:20px;background:#ffffff;margin-right:5px;border:1px solid #d32f2f;border-radius:4px;">
@@ -317,68 +301,82 @@
             <div style="width:20px;height:20px;background:#6c757d;margin-right:5px;border-radius:4px;"></div> Đã bán
         </div>
         <div class="d-flex align-items-center">
-            <div style="width:20px;height:20px;background:#d32f2f;margin-right:5px;border-radius:4px;"></div> Đang chọn
+            <div style="width:20px;height:20px;background:#7c3f1d;margin-right:5px;border-radius:4px;"></div> Đang chọn
         </div>
     </div>
 </div>
 
 <form action="{% url 'lock_tickets' %}" method="post" id="ticket-form">
     {% csrf_token %}
-    <div class="ticket-grid">
-        {% for ticket in page_obj %}
-        {% if ticket.status == 'AVAILABLE' %}
-        <div class="ticket" data-number="{{ ticket.number }}" onclick="toggleTicket(this)">
-            {{ ticket.number|stringformat:"03d" }}
+    <div class="seat-map-shell">
+        <div class="seat-map-scroll">
+            <div class="seat-map" aria-label="Đặt vé & ghế">
+                <div class="seat-map-title">Đặt vé & ghế</div>
+                <div class="main-stage">SÂN KHẤU</div>
+                <div class="center-stage">SÂN KHẤU</div>
+
+                {% for row in seat_rows %}
+                <div class="row-label" style="grid-column: 1; grid-row: {{ forloop.counter|add:2 }};">{{ row.number }}</div>
+
+                {% for ticket in row.left_seats %}
+                <button type="button"
+                    class="seat-button {% if ticket.is_guest_seat %}guest{% elif ticket.status != 'AVAILABLE' %}sold{% endif %}"
+                    style="grid-column: {{ forloop.counter|add:1 }}; grid-row: {{ forloop.parentloop.counter|add:2 }};"
+                    data-number="{{ ticket.number }}"
+                    data-label="{{ ticket.seat_label }}"
+                    data-price="{{ ticket.price }}"
+                    title="{{ ticket.seat_label }} - {{ ticket.price_display }}"
+                    {% if ticket.status != 'AVAILABLE' %}disabled{% endif %}
+                    onclick="toggleTicket(this)">
+                    {{ ticket.seat_label }}
+                </button>
+                {% endfor %}
+
+                {% for ticket in row.right_seats %}
+                <button type="button"
+                    class="seat-button {% if ticket.is_guest_seat %}guest{% elif ticket.status != 'AVAILABLE' %}sold{% endif %}"
+                    style="grid-column: {{ forloop.counter|add:7 }}; grid-row: {{ forloop.parentloop.counter|add:2 }};"
+                    data-number="{{ ticket.number }}"
+                    data-label="{{ ticket.seat_label }}"
+                    data-price="{{ ticket.price }}"
+                    title="{{ ticket.seat_label }} - {{ ticket.price_display }}"
+                    {% if ticket.status != 'AVAILABLE' %}disabled{% endif %}
+                    onclick="toggleTicket(this)">
+                    {{ ticket.seat_label }}
+                </button>
+                {% endfor %}
+                {% endfor %}
+
+                {% for section in left_sections %}
+                <div class="section-label" style="grid-column: {{ forloop.counter|add:1 }}; grid-row: 15;">{{ section }}</div>
+                {% endfor %}
+                {% for section in right_sections %}
+                <div class="section-label" style="grid-column: {{ forloop.counter|add:7 }}; grid-row: 15;">{{ section }}</div>
+                {% endfor %}
+            </div>
         </div>
-        {% else %}
-        <div class="ticket sold" title="{{ ticket.status }}">
-            {{ ticket.number|stringformat:"03d" }}
-        </div>
-        {% endif %}
-        {% endfor %}
     </div>
 
     <!-- Hidden inputs for selection -->
     <div id="selected-inputs"></div>
 
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
-        <div>
-            <!-- Pagination -->
-            <nav>
-                <ul class="pagination mb-0">
-                    {% if page_obj.has_previous %}
-                    <li class="page-item"><a class="page-link"
-                            href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
-                    {% endif %}
-
-                    {% for num in page_obj.paginator.page_range %}
-                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                    </li>
-                    {% endfor %}
-
-                    {% if page_obj.has_next %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </nav>
+    <div class="selection-bar d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+        <div class="text-center text-md-start">
+            <span class="fs-6 me-3">Đã chọn: <strong id="count">0</strong> ghế</span>
+            <span class="fs-6 me-3">Tổng tiền: <strong id="total">0</strong> đ</span>
+            <div class="small text-muted" id="selected-labels">Chưa chọn ghế</div>
         </div>
         <div class="d-flex flex-md-row flex-column justify-content-center align-items-center gap-3">
-            <div>
-                <span class="fs-5 me-3">Đã chọn: <strong id="count">0</strong> vé</span>
-                <span class="fs-5 me-3">Tổng tiền: <strong id="total">0</strong> đ</span>
-            </div>
             <button type="submit" class="btn btn-primary btn-lg" id="btn-pay" disabled>Thanh toán ngay</button>
         </div>
     </div>
 </form>
+</div>
 
 {% endblock %}
 
 {% block scripts %}
 <script>
-    const PRICE = 10000;
     const STORAGE_KEY = 'selected_tickets';
 
     // Load selection from session storage
@@ -387,16 +385,16 @@
     // Initialize UI on load
     document.addEventListener('DOMContentLoaded', () => {
         initSelection();
-
-        // Handle letter modal suppression
-        if (!sessionStorage.getItem('hide_letter_modal')) {
-            document.getElementById('letter-overlay').classList.remove('d-none');
-        }
     });
 
     function initSelection() {
-        // Highlight visible tickets that are in our selection
-        document.querySelectorAll('.ticket').forEach(el => {
+        const selectableSeats = Array.from(document.querySelectorAll('.seat-button:not(.sold):not(.guest)'));
+        const validSeatNumbers = new Set(selectableSeats.map(el => el.dataset.number));
+        selectedTickets = new Set(Array.from(selectedTickets).filter(num => validSeatNumbers.has(num)));
+        saveSelection();
+
+        // Highlight visible seats that are in our selection
+        selectableSeats.forEach(el => {
             if (el.dataset.number && selectedTickets.has(el.dataset.number)) {
                 el.classList.add('selected');
             }
@@ -428,10 +426,15 @@
 
     function updateUI() {
         // Update text
+        const selectedSeatElements = Array.from(document.querySelectorAll('.seat-button.selected'));
         const count = selectedTickets.size;
+        const total = selectedSeatElements.reduce((sum, el) => sum + Number(el.dataset.price || 0), 0);
+        const selectedLabels = selectedSeatElements.map(el => el.dataset.label);
+
         document.getElementById('count').innerText = count;
-        document.getElementById('total').innerText = (count * PRICE).toLocaleString();
+        document.getElementById('total').innerText = total.toLocaleString('vi-VN');
         document.getElementById('btn-pay').disabled = count === 0;
+        document.getElementById('selected-labels').innerText = selectedLabels.length ? selectedLabels.join(', ') : 'Chưa chọn ghế';
 
         // Update hidden inputs for form submission
         const container = document.getElementById('selected-inputs');
@@ -446,46 +449,5 @@
         });
     }
 
-    function openLetter() {
-        document.getElementById('envelope-wrapper').classList.add('d-none');
-        document.getElementById('letter-content-wrapper').classList.remove('d-none');
-        document.getElementById('letter-content-wrapper').classList.add('d-flex', 'justify-content-center', 'align-items-center');
-    }
-
-    function closeLetter() {
-        document.getElementById('letter-overlay').classList.add('d-none');
-        sessionStorage.setItem('hide_letter_modal', 'true');
-    }
-
-    function randomSelect(count) {
-        // Get all available tickets that are NOT currently selected
-        // We look for elements with class 'ticket' that do not have 'sold' class and do not have 'selected' class
-        const availableTickets = Array.from(document.querySelectorAll('.ticket:not(.sold):not(.selected)'));
-
-        if (availableTickets.length === 0) {
-            alert('Không còn vé trống nào trên trang này để chọn thêm!');
-            return;
-        }
-
-        if (availableTickets.length < count) {
-            alert(`Chỉ còn ${availableTickets.length} vé trống trên trang này. Sẽ chọn tất cả.`);
-            count = availableTickets.length;
-        }
-
-        // Shuffle the array
-        const shuffled = availableTickets.sort(() => 0.5 - Math.random());
-
-        // Select the first 'count' elements
-        const toSelect = shuffled.slice(0, count);
-
-        toSelect.forEach(el => {
-            const num = el.dataset.number;
-            selectedTickets.add(num);
-            el.classList.add('selected');
-        });
-
-        saveSelection();
-        updateUI();
-    }
 </script>
 {% endblock %}

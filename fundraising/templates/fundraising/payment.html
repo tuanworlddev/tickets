@@ -1,0 +1,90 @@
+{% extends 'fundraising/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <div class="card shadow border-0">
+            <div class="card-header bg-orange text-white">
+                <h4 class="mb-0">Thanh toán vé {{ event.name|default:"Hồn Việt" }}</h4>
+            </div>
+            <div class="card-body text-center">
+                <h5 class="fw-bold mb-3">Quét mã QR để chuyển khoản</h5>
+
+                <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                    {% for ticket in tickets %}
+                    <span class="badge rounded-pill text-bg-light border px-3 py-2">
+                        Ghế {{ ticket.seat_label }}
+                    </span>
+                    {% endfor %}
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Tổng tiền:</strong> {{ amount_display }}
+                </div>
+
+                <div class="alert alert-warning text-center">
+                    <h5>Thời gian giữ ghế: <span id="timer" class="fw-bold text-danger">--:--</span></h5>
+                    <small>Chỉ sau khi bấm xác nhận đã thanh toán, hệ thống mới mở trang tải vé.</small>
+                </div>
+
+                <div id="qr-container" class="d-flex justify-content-center align-items-center mb-3" style="min-height: 300px;">
+                    {% if qr_url %}
+                    <img src="{{ qr_url }}" alt="VietQR" class="img-fluid" style="max-width: 320px;">
+                    {% else %}
+                    <div class="alert alert-warning">Không thể tạo mã QR tự động. Vui lòng chuyển khoản thủ công.</div>
+                    {% endif %}
+                </div>
+
+                <div class="text-start mx-auto mb-4" style="max-width: 360px;">
+                    <p class="mb-1"><strong>Ngân hàng:</strong> {{ bank_name|default:"MB Bank" }}</p>
+                    <p class="mb-1"><strong>Số tài khoản:</strong> {{ account_no|default:"0975497557" }}</p>
+                    <p class="mb-1"><strong>Chủ tài khoản:</strong> {{ account_name|default:"Nguyễn Thu Hương" }}</p>
+                    <p class="mb-1"><strong>Nội dung:</strong> HON VIET + tên của bạn</p>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <form method="post" action="{% url 'confirm_payment' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            Tôi đã thanh toán - nhận vé
+                        </button>
+                    </form>
+                    <a href="{% url 'cancel_checkout' %}" class="btn btn-outline-secondary">
+                        Hủy giao dịch và mở lại ghế
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    sessionStorage.removeItem('selected_tickets');
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const timerElement = document.getElementById("timer");
+        const expiresAt = Number("{{ expiration_timestamp|default:0 }}") * 1000;
+
+        function updateTimer() {
+            const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+
+            if (remaining <= 0) {
+                timerElement.innerText = "00:00";
+                alert("Thời gian giữ ghế đã hết. Bạn sẽ được chuyển về trang chủ.");
+                window.location.href = "{% url 'index' %}";
+                return;
+            }
+
+            const minutes = Math.floor(remaining / 60);
+            const seconds = Math.floor(remaining % 60);
+            timerElement.innerText =
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        updateTimer();
+        setInterval(updateTimer, 1000);
+    });
+</script>
+{% endblock %}

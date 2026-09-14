@@ -8,30 +8,31 @@
                 <h4 class="mb-0">Xác nhận thanh toán</h4>
             </div>
             <div class="card-body">
-                <h5>Danh sách vé đã chọn:</h5>
-                <div class="ticket-grid mb-4">
+                <h5>Ghế đã chọn:</h5>
+                <div class="d-flex flex-wrap gap-2 mb-3">
                     {% for ticket in tickets %}
-                    <div class="ticket selected">
-                        {{ ticket.number }}
+                    <div class="border rounded px-3 py-2 bg-light">
+                        <strong>{{ ticket.seat_label }}</strong>
+                        <span class="text-muted small">Loại {{ ticket.seat_type }} - {{ ticket.price_display }}</span>
                     </div>
                     {% endfor %}
                 </div>
 
-                <div class="alert alert-warning text-center">
-                    <h5>Thời gian giữ vé: <span id="timer" class="fw-bold text-danger">--:--</span></h5>
-                    <small>Vui lòng thanh toán trước khi vé được mở lại.</small>
+                <div class="alert alert-info">
+                    <strong>Tổng tiền:</strong> {{ total_amount_display }}
                 </div>
 
-                <div class="alert alert-info">
-                    <strong>Tổng tiền:</strong> {{ total_amount }} đ
+                <div class="alert alert-warning text-center">
+                    <h5>Thời gian giữ ghế: <span id="timer" class="fw-bold text-danger">--:--</span></h5>
+                    <small>Vui lòng thanh toán trước khi ghế được mở lại.</small>
                 </div>
 
                 <form method="post">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label class="form-label">Tên Thánh + Họ và tên</label>
+                        <label class="form-label">Họ và tên</label>
                         <input type="text" name="name" class="form-control" required
-                            placeholder="VD: Giuse Nguyễn Văn A">
+                            placeholder="VD: Nguyễn Văn A">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Số điện thoại</label>
@@ -40,9 +41,9 @@
                     </div>
 
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg">Xác nhận & Lấy mã QR</button>
+                        <button type="submit" class="btn btn-primary btn-lg">Thanh Toán</button>
                         <a href="{% url 'cancel_checkout' %}" class="btn btn-outline-secondary">Quay lại (Hủy chọn
-                            vé)</a>
+                            ghế)</a>
                     </div>
                 </form>
             </div>
@@ -58,7 +59,7 @@
 
     document.addEventListener("DOMContentLoaded", function () {
         const timerElement = document.getElementById("timer");
-        let remaining = 180; // 3 phút = 180 giây
+        const expiresAt = Number("{{ expiration_timestamp|default:0 }}") * 1000;
 
         const phoneInput = document.querySelector('input[name="phone"]');
         const form = document.querySelector('form');
@@ -82,9 +83,11 @@
         });
 
         function updateTimer() {
+            const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+
             if (remaining <= 0) {
                 timerElement.innerText = "00:00";
-                alert("Thời gian giữ vé đã hết. Bạn sẽ được chuyển về trang chủ.");
+                alert("Thời gian giữ ghế đã hết. Bạn sẽ được chuyển về trang chủ.");
                 window.location.href = "{% url 'index' %}";
                 return;
             }
@@ -98,8 +101,6 @@
             if (remaining < 60) {
                 timerElement.classList.add("blink");
             }
-
-            remaining--;
         }
 
         updateTimer();
