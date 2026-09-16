@@ -1,12 +1,29 @@
+@font-face {
+    font-family: 'HonVietRoboto';
+    src: url('../fonts/Roboto-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'HonVietRoboto';
+    src: url('../fonts/Roboto-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
 :root {
     --primary-color: #7c3f1d;
     --primary-hover: #5c2d13;
     --gold-color: #d8af60;
     --ticket-size: 50px;
+    --font-vietnamese: 'HonVietRoboto', 'Segoe UI', Tahoma, Arial, sans-serif;
 }
 
 body {
-    font-family: 'Roboto', sans-serif;
+    font-family: var(--font-vietnamese);
     font-size: 16px;
     background-color: #fff8e8;
     overflow-x: hidden;
