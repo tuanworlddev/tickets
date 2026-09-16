@@ -1,10 +1,20 @@
 from django.core.management.base import BaseCommand
-from fundraising.models import GUEST_SEAT_ROWS, GUEST_SEAT_SECTIONS, SEAT_COLUMNS, SEAT_ROWS, Ticket
+from fundraising.models import (
+    GUEST_SEAT_ROWS,
+    GUEST_SEAT_SECTIONS,
+    SEAT_COLUMNS,
+    SEAT_ROWS,
+    Ticket,
+    ensure_default_seat_prices,
+)
 
 class Command(BaseCommand):
     help = 'Initialize performance seats'
 
     def handle(self, *args, **kwargs):
+        ensure_default_seat_prices()
+        self.stdout.write(self.style.SUCCESS('Ensured default seat prices'))
+
         total_seats = SEAT_ROWS * len(SEAT_COLUMNS)
         removed_count, _ = Ticket.objects.filter(number__gt=total_seats).delete()
 
